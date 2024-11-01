@@ -17,19 +17,23 @@ function build_openssl() {
     TARGET_HOST=$1
     OPENSSL_ARCH=$2
     INSTALL_DIR=${BUILD_DIR}/openssl-${OPENSSL_VERSION}/${ANDROID_ABI}
-    mkdir -p ${INSTALL_DIR}
+    mkdir -p ${INSTALL_DIR} || { echo "Failed to create directory: ${INSTALL_DIR}"; exit 1; }
+
+    # Thêm fPIC vào CFLAGS
+    export CFLAGS="-fPIC"
     
     ./Configure ${OPENSSL_ARCH} no-tests no-unit-test no-shared -static no-asm -D__ANDROID_API__=${MIN_API} --prefix=${INSTALL_DIR}
-    make -j$(($(getconf _NPROCESSORS_ONLN) + 1))
-    make install_sw
-    #clean up
-    rm -rf ${OPENSSL_SRC_DIR}
-    rm -rf ${INSTALL_DIR}/bin
-    rm -rf ${INSTALL_DIR}/share
-    rm -rf ${INSTALL_DIR}/ssl
-    rm -rf ${INSTALL_DIR}/lib/engines*
-    rm -rf ${INSTALL_DIR}/lib/pkgconfig
-    rm -rf ${INSTALL_DIR}/lib/ossl-modules
+    make V=1 -j$(($(getconf _NPROCESSORS_ONLN) + 1)) || { echo "OpenSSL build failed"; exit 1; }
+    make install_sw || { echo "OpenSSL installation failed"; exit 1; }
+
+    # Clean up
+    [ -d "${OPENSSL_SRC_DIR}" ] && rm -rf ${OPENSSL_SRC_DIR}
+    [ -d "${INSTALL_DIR}/bin" ] && rm -rf ${INSTALL_DIR}/bin
+    [ -d "${INSTALL_DIR}/share" ] && rm -rf ${INSTALL_DIR}/share
+    [ -d "${INSTALL_DIR}/ssl" ] && rm -rf ${INSTALL_DIR}/ssl
+    [ -d "${INSTALL_DIR}/lib/engines*" ] && rm -rf ${INSTALL_DIR}/lib/engines*
+    [ -d "${INSTALL_DIR}/lib/pkgconfig" ] && rm -rf ${INSTALL_DIR}/lib/pkgconfig
+    [ -d "${INSTALL_DIR}/lib/ossl-modules" ] && rm -rf ${INSTALL_DIR}/lib/ossl-modules
 }
 
 function build_curl() {
